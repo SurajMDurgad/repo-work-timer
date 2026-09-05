@@ -1,0 +1,47 @@
+{
+  "name": "repo-work-timer",
+  "displayName": "Repo Work Timer",
+  "description": "Monthly repository runtime for Claude Code, Codex, and terminal commands. Local logs, no focus tracking.",
+  "version": "0.1.0",
+  "publisher": "SurajMDurgad",
+  "author": "Suraj M Durgad",
+  "license": "MIT",
+  "engines": { "vscode": "^1.96.0" },
+  "categories": ["Other"],
+  "keywords": ["time tracking", "claude", "codex", "terminal", "productivity"],
+  "repository": { "type": "git", "url": "https://github.com/SurajMDurgad/repo-work-timer.git" },
+  "homepage": "https://github.com/SurajMDurgad/repo-work-timer#readme",
+  "bugs": { "url": "https://github.com/SurajMDurgad/repo-work-timer/issues" },
+  "activationEvents": ["onStartupFinished"],
+  "main": "./src/extension.js",
+  "extensionKind": ["workspace"],
+  "capabilities": {
+    "untrustedWorkspaces": { "supported": false, "description": "Reads local agent logs and repository process metadata only in trusted workspaces." },
+    "virtualWorkspaces": { "supported": false, "description": "Requires a filesystem and local process access." }
+  },
+  "scripts": {
+    "test": "node --test",
+    "check": "node scripts/check.js",
+    "package": "vsce package --no-dependencies",
+    "vscode:prepublish": "npm run check && npm test"
+  },
+  "devDependencies": { "@vscode/vsce": "3.9.2" },
+  "contributes": {
+    "commands": [
+      { "command": "repoWorkTimer.menu", "title": "Repo Work Timer: Controls and Logs" },
+      { "command": "repoWorkTimer.history", "title": "Repo Work Timer: Monthly History" },
+      { "command": "repoWorkTimer.importHistory", "title": "Repo Work Timer: Import Agent History" },
+      { "command": "repoWorkTimer.export", "title": "Repo Work Timer: Export Monthly CSV" }
+    ],
+    "configuration": {
+      "title": "Repo Work Timer",
+      "properties": {
+        "repoWorkTimer.enabled": { "type": "boolean", "default": true, "description": "Track agent and terminal runtime for repositories in this workspace." },
+        "repoWorkTimer.staleAgentMinutes": { "type": "number", "default": 30, "minimum": 5, "maximum": 1440, "description": "Stop counting an unfinished agent session after this many minutes without a log update. Running terminal commands are independent of this crash safeguard." },
+        "repoWorkTimer.codexHome": { "type": "string", "default": "", "scope": "machine", "description": "Codex data directory. Empty uses CODEX_HOME or ~/.codex." },
+        "repoWorkTimer.claudeHome": { "type": "string", "default": "", "scope": "machine", "description": "Claude Code data directory. Empty uses CLAUDE_CONFIG_DIR or ~/.claude." },
+        "repoWorkTimer.externalTerminals": { "type": "boolean", "default": true, "description": "Also detect commands in external local terminals on macOS and Linux. Idle shells do not count." }
+      }
+    }
+  }
+}
