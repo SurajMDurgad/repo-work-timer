@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.1
+
+- Add a custom clock-and-Git-branch icon for the extension listing.
+
 ## 0.1.0
 
 - Track monthly Git repository runtime for Claude Code, Codex, and terminal commands.
