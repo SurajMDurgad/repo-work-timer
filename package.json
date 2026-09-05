@@ -1,8 +1,9 @@
 {
   "name": "repo-work-timer",
   "displayName": "Repo Work Timer",
+  "icon": "media/icon.png",
   "description": "Monthly repository runtime for Claude Code, Codex, and terminal commands. Local logs, no focus tracking.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "SurajMDurgad",
   "author": "Suraj M Durgad",
   "license": "MIT",
