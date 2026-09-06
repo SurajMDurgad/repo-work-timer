@@ -6,6 +6,7 @@ const { discoverRepositories, repoForPath } = require('./repositories');
 const { AgentScanner, historicalIntervals } = require('./agents');
 const { snapshot } = require('./processes');
 const { Store } = require('./store');
+const { migrateLegacy } = require('./legacy');
 const { Tracker } = require('./tracker');
 const { monthKey, monthBounds, duration, formatDuration, dailyTotals } = require('./core');
 const { validateLimit, limitState } = require('./limits');
@@ -20,6 +21,7 @@ function activate(context) {
   const tracker = new Tracker(store);
   const scanner = new AgentScanner();
   const terminals = new Map();
+  const migrated = new Set(), migrationIssues = new Map();
   let repos = [], selectedId, agentSources = new Map(), processTerminals = new Set();
   let polling = false, disposed = false, issue = '', importing = false;
   const config = () => vscode.workspace.getConfiguration('repoWorkTimer');
@@ -38,6 +40,15 @@ function activate(context) {
   function render() {
     const repo = selected();
     if (!repo) { status.hide(); return; }
+    const migrationIssue = migrationIssues.get(repo.id);
+    if (migrationIssue) {
+      status.backgroundColor = undefined; status.color = undefined;
+      status.text = `$(warning) ${repo.name} · History recovery pending`;
+      status.tooltip = `${repo.root}\nSaved history could not be recovered yet. Retrying automatically.\n${migrationIssue}\nCurrent work continues to be saved. Click for Diagnostics.`;
+      status.accessibilityInformation = { label: `${repo.name}, history recovery pending, retrying automatically` };
+      status.show();
+      return;
+    }
     const month = monthKey(Date.now());
     const enabled = config().get('enabled', true);
     const sources = [...(currentSources().get(repo.id) || [])];
@@ -69,6 +80,18 @@ function activate(context) {
     if (polling || disposed) return;
     polling = true;
     try {
+      for (const repo of repos) {
+        if (process.platform !== 'darwin' || migrated.has(repo.id)) continue;
+        try {
+          const added = migrateLegacy(store, repo, path.join(os.homedir(), 'Library', 'Application Support', 'Repo Work Timer'));
+          if (added) output.appendLine(`Migrated ${added} legacy records for ${repo.name}; original logs preserved.`);
+          migrated.add(repo.id);
+          migrationIssues.delete(repo.id);
+        } catch (e) {
+          if (migrationIssues.get(repo.id) !== e.message) output.appendLine(`History recovery failed for ${repo.name}: ${e.message}. Retrying automatically.`);
+          migrationIssues.set(repo.id, e.message);
+        }
+      }
       if (repos.length && config().get('enabled', true)) {
         const state = await snapshot(repos, config().get('externalTerminals', true));
         agentSources = await scanner.sample(repos, homes(), state.alive, config().get('staleAgentMinutes', 30) * 60000);

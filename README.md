@@ -101,6 +101,10 @@ SurajMDurgad.repo-work-timer/logs/<repository-hash>/
 
 `repository.json` stores the repository's local name and path. Each interval contains timestamps and source labels. **Open log folder** reveals the actual location on your system. Back up this directory to preserve your history; no remote backup is provided. CSV export contains per-day durations with overlapping activity merged.
 
+Saved time survives restarts. On macOS, the original local timer's logs under `~/Library/Application Support/Repo Work Timer/<repository-name>/` are automatically migrated when the repository opens. Migration verifies the repository path, preserves every recorded month and the original files, and merges overlaps with current logs. Repeated starts do not duplicate time.
+
+If migration fails, the timer shows **History recovery pending** and retries automatically while continuing to save current work. Open **Diagnostics** from the timer menu for the error. Ordinary updates use the same persistent storage; moving a repository, switching extension hosts, or deleting local storage is a separate change and is not covered by restart persistence.
+
 ## Development
 
 ```sh
