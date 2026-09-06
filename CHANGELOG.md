@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.3
+
+- Automatically migrate the original macOS timer's saved history without deleting original logs or double-counting overlaps.
+- Show a persistent history-recovery warning and retry failed migrations while continuing to save current work.
+- Add restart, crash, upgrade compatibility, and migration regression coverage and require history preservation checks before publishing.
+
 ## 0.1.2
 
 - Add optional monthly runtime limits per repository, shared across local extension windows.
