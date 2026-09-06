@@ -45,6 +45,20 @@ class Store {
     catch (e) { if (e.code === 'ENOENT') return []; throw e; }
   }
   total(repo, month) { return duration(this.records(repo, month)); }
+  limitHours(repo) {
+    try { return JSON.parse(fs.readFileSync(path.join(this.directory(repo), 'limit.json'), 'utf8')).hours; }
+    catch (e) { if (e.code === 'ENOENT') return 0; throw e; }
+  }
+  setLimitHours(repo, hours) {
+    if (!Number.isFinite(hours) || hours < 0 || hours > 744) throw new Error('Monthly limit must be between 0 and 744 hours.');
+    this.initialize(repo);
+    const file = path.join(this.directory(repo), 'limit.json');
+    const temporary = `${file}.${crypto.randomUUID()}.tmp`;
+    try {
+      fs.writeFileSync(temporary, JSON.stringify({ hours }) + '\n', { mode: 0o600 });
+      fs.renameSync(temporary, file);
+    } finally { fs.rmSync(temporary, { force: true }); }
+  }
   paused(repo) { return fs.existsSync(path.join(this.directory(repo), 'paused')); }
   setPaused(repo, value) {
     this.initialize(repo);

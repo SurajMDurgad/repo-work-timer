@@ -3,7 +3,7 @@
   "displayName": "Repo Work Timer",
   "icon": "media/icon.png",
   "description": "Monthly repository runtime for Claude Code, Codex, and terminal commands. Local logs, no focus tracking.",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "publisher": "SurajMDurgad",
   "author": "Suraj M Durgad",
   "license": "MIT",
@@ -29,6 +29,8 @@
   "devDependencies": { "@vscode/vsce": "3.9.2" },
   "contributes": {
     "commands": [
+      { "command": "repoWorkTimer.setLimit", "title": "Repo Work Timer: Set Monthly Limit" },
+      { "command": "repoWorkTimer.previewLimits", "title": "Repo Work Timer: Preview Limit Colors" },
       { "command": "repoWorkTimer.menu", "title": "Repo Work Timer: Controls and Logs" },
       { "command": "repoWorkTimer.history", "title": "Repo Work Timer: Monthly History" },
       { "command": "repoWorkTimer.importHistory", "title": "Repo Work Timer: Import Agent History" },
