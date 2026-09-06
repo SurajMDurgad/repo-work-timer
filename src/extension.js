@@ -8,6 +8,7 @@ const { snapshot } = require('./processes');
 const { Store } = require('./store');
 const { Tracker } = require('./tracker');
 const { monthKey, monthBounds, duration, formatDuration, dailyTotals } = require('./core');
+const { validateLimit, limitState } = require('./limits');
 let stop;
 
 function activate(context) {
@@ -43,8 +44,13 @@ function activate(context) {
     const paused = store.paused(repo) || !enabled;
     const running = !paused && sources.length > 0;
     const label = paused ? 'Paused' : sources.length ? `Running: ${sources.join(', ')}` : 'Waiting for Claude, Codex, or terminal work';
-    status.text = `$(${issue ? 'warning' : running ? 'clock' : 'debug-pause'}) ${repo.name} · ${month} · ${formatDuration(store.total(repo, month))}`;
-    status.tooltip = `${repo.root}\n${label}\n${issue ? issue + '\n' : ''}Counts background runtime, not keyboard activity.\nClick for controls, history import, and logs.`;
+    const total = store.total(repo, month);
+    const limit = limitState(total, store.limitHours(repo));
+    status.backgroundColor = limit?.severity ? new vscode.ThemeColor(`statusBarItem.${limit.severity}Background`) : undefined;
+    status.color = limit?.severity ? new vscode.ThemeColor(`statusBarItem.${limit.severity}Foreground`) : undefined;
+    status.text = `$(${limit?.icon || (issue ? 'warning' : running ? 'clock' : 'debug-pause')}) ${repo.name} · ${month} · ${limit?.text || formatDuration(total)}`;
+    status.tooltip = `${repo.root}\n${label}\n${limit ? limit.detail + '\n' : ''}${issue ? issue + '\n' : ''}Counts background runtime, not keyboard activity.\nClick for controls, history import, and logs.`;
+    status.accessibilityInformation = { label: `${repo.name}, ${month}, ${label}, ${formatDuration(total)}${limit ? `, ${limit.label}, ${limit.percent} percent of monthly limit` : ''}` };
     status.show();
   }
   function reconcile() {
@@ -54,6 +60,8 @@ function activate(context) {
   }
   function report(e) {
     issue = e.message;
+    status.backgroundColor = undefined; status.color = undefined;
+    status.accessibilityInformation = { label: `Repo timer: ${e.message}` };
     output.appendLine(`${new Date().toISOString()} ${e.message}`);
     status.text = '$(warning) Repo timer'; status.tooltip = e.message; status.show();
   }
@@ -89,6 +97,22 @@ function activate(context) {
     const lines = [`# ${repo.name} — monthly runtime`, '', '| Month | Runtime |', '|---|---:|', ...store.months(repo).map(month => `| ${month} | ${formatDuration(store.total(repo, month))} |`), '', 'Counts Claude Code, Codex, and terminal commands. Simultaneous activity counts once. A persistent dev server counts until stopped or paused.', '', `Logs: ${store.directory(repo)}`];
     await vscode.window.showTextDocument(await vscode.workspace.openTextDocument({ language: 'markdown', content: lines.join('\n') }));
   }
+  async function setLimit(repo) {
+    if (!repo) return;
+    const value = await vscode.window.showInputBox({
+      title: `${repo.name}: monthly runtime limit`,
+      prompt: 'Hours per calendar month. Yellow at 80%, red at 95%. Use 0 to remove. Tracking continues past the limit.',
+      value: String(store.limitHours(repo)), validateInput: validateLimit
+    });
+    if (value === undefined) return;
+    const error = validateLimit(value); if (error) throw new Error(error);
+    store.setLimitHours(repo, Number(value));
+    render();
+  }
+  function previewLimits() {
+    const panel = vscode.window.createWebviewPanel('repoWorkTimer.limitPreview', 'Repo Work Timer: Limit Preview', vscode.ViewColumn.One, {});
+    panel.webview.html = require('node:fs').readFileSync(path.join(context.extensionPath, 'media', 'limit-preview.html'), 'utf8');
+  }
   async function importHistory(repo = selected()) {
     if (!repo) return chooseRepo();
     if (importing) return;
@@ -120,9 +144,13 @@ function activate(context) {
     command('repoWorkTimer.history', () => history()),
     command('repoWorkTimer.importHistory', () => importHistory()),
     command('repoWorkTimer.export', () => exportCsv()),
+    command('repoWorkTimer.setLimit', async () => setLimit(await chooseRepo())),
+    command('repoWorkTimer.previewLimits', previewLimits),
     command('repoWorkTimer.menu', async () => {
       const repo = selected() || await chooseRepo(); if (!repo) return;
-      const choice = await vscode.window.showQuickPick([store.paused(repo) ? 'Resume timer' : 'Pause timer', 'Monthly history', 'Import agent history', 'Export monthly CSV', 'Open log folder', 'Choose repository', 'Settings', 'Diagnostics'], { title: `${repo.name} work timer` });
+      const choice = await vscode.window.showQuickPick([store.paused(repo) ? 'Resume timer' : 'Pause timer', 'Set monthly limit', 'Preview limit colors', 'Monthly history', 'Import agent history', 'Export monthly CSV', 'Open log folder', 'Choose repository', 'Settings', 'Diagnostics'], { title: `${repo.name} work timer` });
+      if (choice === 'Set monthly limit') await setLimit(repo);
+      if (choice === 'Preview limit colors') previewLimits();
       if (choice === 'Pause timer' || choice === 'Resume timer') { reconcile(); store.setPaused(repo, choice === 'Pause timer'); reconcile(); }
       if (choice === 'Monthly history') await history(repo);
       if (choice === 'Import agent history') await importHistory(repo);

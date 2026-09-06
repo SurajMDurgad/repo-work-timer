@@ -32,6 +32,32 @@ Each repository has its own total. In a workspace with several repositories, the
 
 New local calendar months start at zero automatically. Previous logs are retained, including when an interval crosses midnight on the last day of a month. Concurrent VS Code windows write separate files and merge overlapping time when calculating totals. Pause state is shared across windows on the same extension host's filesystem and propagates on the next poll.
 
+## Monthly repository limits
+
+Click the timer → **Set monthly limit**, or run **Repo Work Timer: Set Monthly Limit** to choose a repository. Enter hours (for example `20` or `1.5`); `0` removes the limit. Limits are optional, stored locally per Git root, shared across windows on the same extension host, and repeat each calendar month. Existing runtime, including imported history, counts toward the limit.
+
+| Monthly usage | Timer appearance |
+|---|---|
+| Below 80% | Normal timer with used/limit hours and percentage |
+| 80–94% | Yellow warning background, warning icon, → Approaching limit |
+| 95–99% | Red error background, error icon, → Almost at limit |
+| 100% and above | Red background, → Limit reached |
+
+Only this extension's status item is highlighted. Tracking continues beyond the limit; pausing does not hide an existing limit warning. New months start with a fresh total and preserve historical records. Updates propagate on the next ten-second poll.
+
+Run **Repo Work Timer: Preview Limit Colors** for both strips with synthetic example data in your current theme, or open [the browser demo](media/limit-preview.html). Icons and text accompany the colors for accessibility.
+
+The design follows [VS Code's warning/error status item guidance](https://code.visualstudio.com/api/ux-guidelines/status-bar). The native API supports only `statusBarItem.warningBackground` and `statusBarItem.errorBackground`, so exact shades depend on your theme. To use the browser demo's balanced yellow and red palette, optionally add these entries to your existing **User Settings JSON** `workbench.colorCustomizations` object (these tokens affect all warning/error status items):
+
+```json
+"workbench.colorCustomizations": {
+  "statusBarItem.warningBackground": "#D4AA32",
+  "statusBarItem.warningForeground": "#171717",
+  "statusBarItem.errorBackground": "#B64040",
+  "statusBarItem.errorForeground": "#FFFFFF"
+}
+```
+
 ## Import earlier work
 
 Run **Repo Work Timer: Import Agent History**, enter a month such as `2026-09`, and review the proposed additional time before importing. Imports reconstruct agent turn boundaries from the available local Claude Code and Codex transcripts. They are labeled as historical records, and repeated imports or overlaps with live tracking do not increase the same interval twice.
