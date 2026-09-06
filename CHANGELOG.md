@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.2
+
+- Add optional monthly runtime limits per repository, shared across local extension windows.
+- Show usage percentages and status bar warnings at 80%, 95%, and 100% of the limit while continuing to track runtime.
+- Add a limit color preview and document theme customization.
+
 ## 0.1.1
 
 - Add a custom clock-and-Git-branch icon for the extension listing.
